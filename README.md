@@ -3,7 +3,7 @@
 폭싹 태워쑤다 - 산불 경계 추적 모듈 (Flame Boundary Tracking Modules)
 ---
 
-![제21회(2025년) 창의적종합설계경진대회_포스터](https://github.com/user-attachments/assets/e876a6ac-282e-41cf-b864-bc97fb5bb5eb)
+![image](https://github.com/user-attachments/assets/2beb6a34-f4fe-4b50-a474-a84c14f81278)
 
 ## 프로젝트 개요
 ---
