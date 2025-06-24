@@ -3,7 +3,7 @@
 폭싹 태워쑤다 - 산불 경계 추적 모듈 (Flame Boundary Tracking Modules)
 ---
 
-![image](https://github.com/user-attachments/assets/2beb6a34-f4fe-4b50-a474-a84c14f81278)
+![FBTM](https://github.com/user-attachments/assets/420f69e1-6a8b-4a26-9b15-be801cd9062d)
 
 ## 프로젝트 개요
 ---
