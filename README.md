@@ -1,4 +1,4 @@
-# 2025 창의력 종합 설계 프로젝트
+# 2025 창의력 종합 설계 
 
 폭싹 태워쑤다 - 산불 경계 추적 모듈 (Flame Boundary Tracking Modules)
 ---
