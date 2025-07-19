@@ -1,5 +1,7 @@
 # 가상 환경 접속 되어있는지 확인하기
 # env\Scripts\activate
+# 실행
+# python web_s.py
 
 from flask import Flask, Response, request, jsonify, render_template
 import numpy as np
@@ -12,11 +14,11 @@ def index():
     return '''
     <h1>Flame-Boundary-Tracking-Module</h1>
     <p>제작 중입니다.</p>
-    <p>링크를 클릭하세요: <a href="/cam">/cam</a></p>
+    <p>링크를 클릭하세요: <a href="/test">테스트 페이지</a></p>
     <img src="/cam" width = "480">
     '''
 
-# 캠 송출
+# 캠 송출 - 오류있
 def gen_cam_stream():
     cap = cv2.VideoCapture("tcp://192.168.0.8:8888")  # libcamera-vid 송출주소
     while True:
@@ -29,6 +31,14 @@ def gen_cam_stream():
 @app.route('/cam')
 def cam_feed():
     return Response(gen_cam_stream(),mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/cam_upload', methods=['POST'])
+def cam_upload():
+    file = request.files['frame']
+    npimg = np.frombuffer(file.read(), np.uint8)
+    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+    cv2.imwrite('latest_cam.jpg',img)
+    return jsonify({'status': 'success'})
 
 # MLX90640 송출
 latest_data = None
