@@ -3,9 +3,10 @@
 # 실행
 # python web_s.py
 
-from flask import Flask, Response, request, jsonify, render_template
+from flask import Flask, Response, request, jsonify, render_template, send_file
 import numpy as np
 import cv2
+import time
 
 app = Flask(__name__)
 
@@ -15,30 +16,43 @@ def index():
     <h1>Flame-Boundary-Tracking-Module</h1>
     <p>제작 중입니다.</p>
     <p>링크를 클릭하세요: <a href="/test">테스트 페이지</a></p>
-    <img src="/cam" width = "480">
     '''
 
-# 캠 송출 - 오류있
-def gen_cam_stream():
-    cap = cv2.VideoCapture("tcp://192.168.0.8:8888")  # libcamera-vid 송출주소
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            continue
-        _, buffer = cv2.imencode('.jpg',frame)
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-@app.route('/cam')
-def cam_feed():
-    return Response(gen_cam_stream(),mimetype='multipart/x-mixed-replace; boundary=frame')
-
-@app.route('/cam_upload', methods=['POST'])
-def cam_upload():
+# 이미지 업로딩
+@app.route('/stream_endpoint', methods=['POST'])
+def stream_endpoint():
+    if 'frame' not in request.files:
+        return jsonify({'error': 'No frame file part'}), 400
     file = request.files['frame']
-    npimg = np.frombuffer(file.read(), np.uint8)
-    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
-    cv2.imwrite('latest_cam.jpg',img)
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    file.save('latest_cam.jpg')
     return jsonify({'status': 'success'})
+
+@app.route('/latest_cam.jpg')
+def latest_cam():
+    # 최근 저장 이미지 반환
+    return send_file('latest_cam.jpg', mimetype='image/jpeg')
+
+# 이미지 스트리밍
+def generate_mjpeg_stream():
+    while True:
+        frame = cv2.imread('latest_cam.jpg')
+        if frame is not None:
+            _, buffer = cv2.imencode('.jpg', frame)
+            yield (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n'
+            )
+        time.sleep(0.05)
+
+@app.route('/mjpeg_feed')
+def mjpeg_feed():
+    return Response(
+        generate_mjpeg_stream(),
+        mimetype='multipart/x-mixed-replace; boundary=frame'
+    )
+
 
 # MLX90640 송출
 latest_data = None
