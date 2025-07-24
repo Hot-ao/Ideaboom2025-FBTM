@@ -1,12 +1,12 @@
 # 가상 환경 접속 되어있는지 확인하기
 # env\Scripts\activate
-# 실행
+# cd Flask
 # python web_s.py
 
 from flask import Flask, Response, request, jsonify, render_template, send_file
-import numpy as np
 import cv2
 import time
+#import numpy as np
 
 app = Flask(__name__)
 
