@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>MLX90640 실시간 열화상</title>
+        <style>
+            canvas { border: 1px solid #333;}
+        </style>
+    </head>
+<body>
+    <h1>실시간 열화상(MLX90640)</h1>
+    <canvas id="thermal-canvas" width="320" height="240"></canvas>
+    <script>
+        const width = 32;
+        const height = 24;
+        const scale = 10;
+        const canvas = document.getElementById('thermal-canvas');
+        const ctx = canvas.getContext('2d');
+
+        async function fetchAndDraw() {
+            try {
+                const response = await fetch('/thermal-data');
+                const json = await response.json();
+                if (!json.data) return;
+                // 2D배열을 1D로 변환
+                let arr = json.data.flat();
+                //24*32 배열 -> 320x240으로 확대
+                for(let y=0; y<height; y++){
+                    for(let x=0; x<width; x++){
+                        let v = arr[y*width + x];
+                        const gamma = 2.5;
+                        const norm = (v+20)/80;
+                        ctx.fillStyle = `hsl(${(1-norm)*240},100%,50%)`;
+                        ctx.fillRect(x*scale, y*scale, scale, scale);
+                    }
+                }
+            } catch(e) { }
+        }
+        setInterval(fetchAndDraw, 150);
+    </script>
+</body>
+</html>
