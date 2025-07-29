@@ -18,7 +18,7 @@
 
         async function fetchAndDraw() {
             try {
-                const response = await fetch('/thermal-data');
+                const response = await fetch('/thermal/thermal-data');
                 const json = await response.json();
                 if (!json.data) return;
                 // 2D배열을 1D로 변환

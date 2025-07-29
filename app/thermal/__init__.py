@@ -1,0 +1,1 @@
+from .routes import thermal_bp
