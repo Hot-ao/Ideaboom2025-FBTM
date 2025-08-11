@@ -5,8 +5,9 @@ import adafruit_mlx90640
 import time
 import requests
 
-#SERVER_URL = 'http://192.168.0.162:5000/stream_endpoint' #MECA
-SERVER_URL = 'http://192.168.200.180:5000/stream_endpoint' #HOME
+SERVER_URL = 'http://192.168.0.162:5000/thermal/upload_endpoint' #MECA
+#SERVER_URL = 'http://192.168.200.171:5000/thermal/upload_endpoint' #HOME
+#SERVER_URL = 'http://fbtm761.duckdns.org:5000/thermal/upload_endpoint' #DUCKDNS
 
 # I2C setup
 i2c = busio.I2C(board.SCL, board.SDA, frequency=400000)

@@ -3,8 +3,9 @@ import cv2
 from picamera2 import Picamera2
 import time
 
-#SERVER_URL = 'http://192.168.0.162:5000/stream_endpoint' #MECA
-SERVER_URL = 'http://192.168.200.171:5000/stream_endpoint' #HOME
+SERVER_URL = 'http://192.168.0.162:5000/camera/stream_endpoint' #MECA
+#SERVER_URL = 'http://192.168.200.171:5000/camera/stream_endpoint' #HOME
+#SERVER_URL = 'http://fbtm761.duckdns.org:5000/camera/stream_endpoint' #DUCKDNS
 
 picam2 = Picamera2()
 picam2.set_controls({"AwbEnable": True})
