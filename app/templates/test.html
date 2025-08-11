@@ -18,13 +18,18 @@
         <h3>MLX90640 열화상</h3>
         <canvas id="thermal-canvas" width="320" height="240"></canvas>
       </div>
+      
+
       <div class="container">
         <div class="panel">
-          <h3>둥당둥당</h3>
+          <div id="direction-display" style="font-size:2em; margin-top: 20px; color: #0076ff;">
+            현재 입력 없음
+          </div>
         </div>
       </div>
     </div>
     <script>
+      // 열화상 모듈 시각화
       const width = 32, height = 24, scale = 10;
       const canvas = document.getElementById('thermal-canvas');
       const ctx = canvas.getContext('2d');
@@ -45,6 +50,52 @@
         } catch(e) {}
       }
       setInterval(fetchAndDraw, 150);
+      // 방향 입력 감지
+      document.addEventListener('keydown', function(event) {
+          let display = document.getElementById('direction-display');
+          switch(event.key.toLowerCase()) {
+              case 'w':
+                  display.textContent = '앞으로 (Forward)';
+                  console.log('forward');
+                  fetch('/motor/input', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({action: 'forward'})
+                  });
+                  break;
+              case 'a':
+                  display.textContent = '왼쪽 (Left)';
+                  console.log('left');
+                  fetch('/motor/input', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({action: 'left'})
+                  });
+                  break;
+              case 's':
+                  display.textContent = '뒤로 (Backward)';
+                  console.log('backward');
+                  fetch('/motor/input', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({action: 'backward'})
+                  });
+                  break;
+              case 'd':
+                  display.textContent = '오른쪽 (Right)';
+                  console.log('right');
+                  fetch('/motor/input', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({action: 'right'})
+                  });
+                  break;
+              case 'esc':
+                  display.textContent = '종료';
+                  console.log('종료하려면 별도 동작 필요');
+                  break;
+          }
+      });
     </script>
   </body>
 </html>
