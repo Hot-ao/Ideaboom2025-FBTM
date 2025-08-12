@@ -2,8 +2,8 @@ import time
 import requests
 from app.camera.capture import CameraCaptue
 
-#SERVER_URL = 'http://192.168.0.162:5000/camera/stream_endpoint' #MECA
-SERVER_URL = 'http://192.168.200.123:5000/camera/stream_endpoint' #HOME
+SERVER_URL = 'http://192.168.0.162:5000/camera/stream_endpoint' #MECA
+#SERVER_URL = 'http://192.168.200.123:5000/camera/stream_endpoint' #HOME
 
 def send_camera_stream():
     cam = CameraCaptue()
