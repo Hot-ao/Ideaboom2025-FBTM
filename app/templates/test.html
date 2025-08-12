@@ -57,7 +57,7 @@
               case 'w':
                   display.textContent = '앞으로 (Forward)';
                   console.log('forward');
-                  fetch('http://192.168.200.108:5000/motor/input', {
+                  fetch('http://192.168.0.10:5000/motor/input', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json'},
                       body: JSON.stringify({action: 'forward'})
@@ -66,7 +66,7 @@
               case 'a':
                   display.textContent = '왼쪽 (Left)';
                   console.log('left');
-                  fetch('http://192.168.200.108:5000/motor/input', {
+                  fetch('http://192.168.0.10:5000/motor/input', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json'},
                       body: JSON.stringify({action: 'left'})
@@ -75,7 +75,7 @@
               case 's':
                   display.textContent = '뒤로 (Backward)';
                   console.log('backward');
-                  fetch('http://192.168.200.108:5000/motor/input', {
+                  fetch('http://192.168.0.10:5000/motor/input', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json'},
                       body: JSON.stringify({action: 'backward'})
@@ -84,7 +84,7 @@
               case 'd':
                   display.textContent = '오른쪽 (Right)';
                   console.log('right');
-                  fetch('http://192.168.200.108:5000/motor/input', {
+                  fetch('http://192.168.0.10:5000/motor/input', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json'},
                       body: JSON.stringify({action: 'right'})
