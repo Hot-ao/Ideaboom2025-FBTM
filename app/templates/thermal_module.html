@@ -1,0 +1,26 @@
+<div class="panel">
+  <h3>MLX90640 열화상</h3>
+  <canvas id="thermal-canvas" width="320" height="240"></canvas>
+</div>
+<script>
+const width = 32, height = 24, scale = 10;
+const canvas = document.getElementById('thermal-canvas');
+const ctx = canvas.getContext('2d');
+async function fetchAndDraw() {
+  try {
+    const response = await fetch('/thermal/thermal-data');
+    const json = await response.json();
+    if (!json.data) return;
+    let arr = json.data.flat();
+    for(let y=0; y<height; y++){
+      for(let x=0; x<width; x++){
+        let v = arr[y*width + x];
+        const norm = (v+20)/80;
+        ctx.fillStyle = `hsl(${(1-norm)*240},100%,50%)`;
+        ctx.fillRect(x*scale, y*scale, scale, scale);
+      }
+    }
+  } catch(e) {}
+}
+setInterval(fetchAndDraw, 150);
+</script>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RC Tank Control</title>
+</head>
+<body>
+  <h2>RC탱크 컨트롤 (WASD로 방향 조작!)</h2>
+  <div id="direction-display" style="font-size:2em; margin:25px;">현재 입력 없음</div>
+  <script>
+    document.addEventListener('keydown', function(event) {
+      let dir = '';
+      switch(event.key.toLowerCase()) {
+        case 'w': dir = 'forward'; break;
+        case 'a': dir = 'left'; break;
+        case 's': dir = 'backward'; break;
+        case 'd': dir = 'right'; break;
+      }
+      if (dir) {
+        document.getElementById('direction-display').textContent = dir.toUpperCase();
+        fetch('http://라즈베리파이_IP:5000/motor/input', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: dir })
+        })
+        .then(res => res.json())
+        .then(data => console.log(data))
+        .catch(err => console.error(err));
+      }
+    });
+
+    document.addEventListener('keyup', function(event) {
+      // 키 뗄 때 정지 명령
+      if (['w','a','s','d'].includes(event.key.toLowerCase())) {
+        document.getElementById('direction-display').textContent = '정지';
+        fetch('http://라즈베리파이_IP:5000/motor/input', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'stop' })
+        });
+      }
+    });
+  </script>
+</body>
+</html>

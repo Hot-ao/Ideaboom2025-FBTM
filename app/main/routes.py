@@ -12,4 +12,4 @@ def index():
 
 @main_bp.route('/test')
 def test():
-    return render_template('test.html') 
+    return render_template('main.html') 
