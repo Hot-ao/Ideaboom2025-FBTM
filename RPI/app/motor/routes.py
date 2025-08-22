@@ -1,6 +1,5 @@
-# app/motor/routes.py
 from flask import Blueprint, request, jsonify
-from app.motor.motor_driver import motor_forward, motor_backward
+from app.motor.module_control import set_motion  # motor_forward/backward 대신 set_motion 임포트
 
 motor_bp = Blueprint("motor", __name__, url_prefix="/motor")
 
@@ -9,14 +8,10 @@ def control_motor():
     data = request.get_json()
     action = data.get("action")
     print(f"Received action from web: {action}")
-    if action == "forward":
-        motor_forward(2.0)
-    elif action == "left":
-        motor_forward(1.0)
-    elif action == "backward":
-        motor_backward(2.0)
-    elif action == "right":
-        motor_backward(1.0)
-    else:
-        return jsonify({"status": "error", "message": "invalid action"}), 400
+
+    if action not in ['forward', 'backward', 'left', 'right', 'stop']:
+        return jsonify({"status": "error", "message": "Invalid action"}), 400
+
+    set_motion(action)  # set_motion 으로 상태 업데이트
+
     return jsonify({"status": "ok", "action": action})
