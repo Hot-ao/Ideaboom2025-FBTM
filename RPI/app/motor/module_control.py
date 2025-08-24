@@ -2,9 +2,9 @@ import RPi.GPIO as GPIO
 import threading
 import time
 
-LEFT_IN1 = 17
-LEFT_IN2 = 18
-LEFT_EN = 27
+LEFT_IN1 = 16
+LEFT_IN2 = 20
+LEFT_EN = 12
 RIGHT_IN1 = 22
 RIGHT_IN2 = 23
 RIGHT_EN = 24
