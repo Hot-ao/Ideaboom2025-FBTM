@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, jsonify
 
 motor_bp = Blueprint('motor', __name__,url_prefix='/motor')
 
-RASPI_IP = '192.168.0.108'
+RASPI_IP = '192.168.0.10'
 RASPI_PORT = 5001
 
 def send_to_raspi(action):

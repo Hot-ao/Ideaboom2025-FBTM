@@ -2,17 +2,78 @@
 <html>
 <head>
   <title>Flame Boundary Tracking Module</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    .container { display: flex; }
-    .panel { margin: 10px; }
+    body {
+      background: #f7fafc;
+      margin: 0;
+      font-family: 'Roboto', Arial, sans-serif;
+      color: #222;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 32px 0 0 0;
+      max-width: 1500px;
+      margin: 0 auto;
+      flex-wrap: nowrap;
+    }
+    .panel {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 16px rgba(55, 82, 105, 0.08);
+      padding: 28px 24px 24px 24px;
+      margin: 0;
+      flex: 1 1 0;
+      min-width: 0;
+      transition: box-shadow 0.2s;
+    }
+    .panel:hover {
+      box-shadow: 0 6px 32px rgba(55, 82, 105, 0.14);
+    }
+    h1 {
+      text-align: center;
+      font-weight: 700;
+      color: #205295;
+      letter-spacing: 1px;
+      margin: 40px 0 12px 0;
+      font-size: 2.4rem;
+    }
+    /* simulation container style */
+    .simulation-container {
+      max-width: 1500px;
+      margin: 24px auto;
+      padding: 0 24px 32px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .simulation-panel {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 16px rgba(55, 82, 105, 0.08);
+      padding: 24px;
+    }
+    @media (max-width: 900px) {
+      .container { flex-direction: column; gap: 18px; }
+      .panel { min-width: unset; }
+      .simulation-container { padding: 0 12px 24px 12px; }
+    }
   </style>
 </head>
 <body>
   <h1>Flame Boundary Tracking Module</h1>
   <div class="container">
-    {% include "camera_module.html" %}
-    {% include "thermal_module.html" %}
-    {% include "module_control.html" %}
+    <div class="panel">{% include "camera_module.html" %}</div>
+    <div class="panel">{% include "thermal_module.html" %}</div>
+    <div class="panel">{% include "module_control.html" %}</div>
+  </div>
+
+  <div class="simulation-container">
+    <div class="simulation-panel">{% include "simulation.html" %}</div>
+    <!-- 추가로 simulation 관련 다른 템플릿들도 여기에 나열 가능 -->
   </div>
 </body>
 </html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>산불 풍향/풍속 시뮬레이션</title>
+    <script>
+        function updateData() {
+            fetch('/simulation/data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('direction').textContent = data.direction + '°';
+                    document.getElementById('speed').textContent = data.speed + ' km/h';
+                    document.getElementById('temperature').textContent = data.temperature + '℃';
+                    document.getElementById('humidity').textContent = data.humidity + '%';
+                });
+        }
+        setInterval(updateData, 20000); // 2초 마다 갱신
+        window.onload = updateData;
+    </script>
+</head>
+<body>
+    <h2>산불 풍향/풍속 시뮬레이션</h2>
+    <div>풍향: <span id="direction"></span></div>
+    <div>풍속: <span id="speed"></span></div>
+    <div>대기 온도: <span id="temperature"></span></div>
+    <div>상대 습도: <span id="humidity"></span></div>
+</body>
+</html>
