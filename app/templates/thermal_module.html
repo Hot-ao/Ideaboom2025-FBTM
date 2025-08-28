@@ -6,21 +6,61 @@
 const width = 32, height = 24, scale = 10;
 const canvas = document.getElementById('thermal-canvas');
 const ctx = canvas.getContext('2d');
+
 async function fetchAndDraw() {
   try {
     const response = await fetch('/thermal/thermal-data');
     const json = await response.json();
     if (!json.data) return;
+    
     let arr = json.data.flat();
-    for(let y=0; y<height; y++){
-      for(let x=0; x<width; x++){
-        let v = arr[y*width + x];
-        const norm = (v+20)/80;
-        ctx.fillStyle = `hsl(${(1-norm)*240},100%,50%)`;
-        ctx.fillRect(x*scale, y*scale, scale, scale);
+
+    // 캔버스 초기화
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 최소/최대 온도 찾기 (컬러 스케일링용)
+    let minVal = Math.min(...arr);
+    let maxVal = Math.max(...arr);
+
+    // 최고 온도 좌표
+    let maxPos = {x: 0, y: 0};
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let v = arr[y * width + x];
+        if (v === maxVal) {
+          maxPos = {x: x, y: y};
+        }
       }
     }
-  } catch(e) {}
+
+    // 픽셀 렌더링
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let v = arr[y * width + x];
+        const norm = (v - minVal) / (maxVal - minVal); // 0~1로 정규화
+        ctx.fillStyle = `hsl(${(1 - norm) * 240},100%,50%)`;
+        ctx.fillRect(x * scale, y * scale, scale, scale);
+      }
+    }
+
+    // 최고 온도 빨간 박스
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(maxPos.x * scale, maxPos.y * scale, scale, scale);
+
+    // 최고 온도 정보 텍스트
+    ctx.fillStyle = 'red';
+    ctx.font = '14px Arial';
+    const text = `(${maxPos.x}, ${maxPos.y}) ${maxVal.toFixed(1)}°C`;
+    const textX = Math.min(maxPos.x * scale + 5, canvas.width - ctx.measureText(text).width - 5);
+    const textY = Math.min(maxPos.y * scale + scale + 20, canvas.height - 5);
+    ctx.fillText(text, textX, textY);
+
+  } catch(e) {
+    console.error(e);
+  }
 }
+
+// 150ms마다 업데이트
 setInterval(fetchAndDraw, 150);
 </script>

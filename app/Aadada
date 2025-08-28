@@ -1,0 +1,116 @@
+import RPi.GPIO as GPIO
+import time
+import sys
+import threading
+sys.path.append('/home/fbtm/Desktop/fbtm_code/Ideaboom2025-FBTM/RPI/app/thermal')
+from capture import ThermalCapture
+
+# GPIO 핀 설정
+IN1, IN2, ENA = 16, 20, 12
+ENC_A, ENC_B = 8, 7
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup([IN1, IN2, ENA], GPIO.OUT)
+GPIO.setup([ENC_A, ENC_B], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# PWM 시작
+pwm = GPIO.PWM(ENA, 1000)
+pwm.start(0)
+
+# 전역 변수
+encoder_count = 0
+MAX_COUNT = 1850  # 오른쪽 회전 최대 펄스 수 제한
+MIN_COUNT = -1850 # 왼쪽 회전 최소 펄스 수 제한 (음수)
+MOTOR_SPEED = 70
+
+# 엔코더 인터럽트 콜백
+def encoder_callback(channel):
+    global encoder_count
+    if GPIO.input(ENC_A) == GPIO.input(ENC_B):
+        encoder_count += 1
+    else:
+        encoder_count -= 1
+
+GPIO.add_event_detect(ENC_A, GPIO.BOTH, callback=encoder_callback)
+
+# 모터 제어 함수
+def move_motor(direction, speed=MOTOR_SPEED):
+    if direction == 'left':
+        GPIO.output(IN1, GPIO.HIGH)
+        GPIO.output(IN2, GPIO.LOW)
+        pwm.ChangeDutyCycle(speed)
+    elif direction == 'right':
+        GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN2, GPIO.HIGH)
+        pwm.ChangeDutyCycle(speed)
+    else:
+        stop_motor()
+
+# 모터 정지 함수
+def stop_motor():
+    GPIO.output(IN1, GPIO.LOW)
+    GPIO.output(IN2, GPIO.LOW)
+    pwm.ChangeDutyCycle(0)
+
+# 초기 위치 복귀 함수 (홈으로 돌아가기)
+def init_motor():
+    global encoder_count
+    print("Returning motor to home position...")
+    # 홈 위치를 MIN_COUNT 위치로 정의, 오른쪽으로 계속 돌며 복귀
+    move_motor('right')
+    while encoder_count > MIN_COUNT:
+        time.sleep(0.01)
+    stop_motor()
+    encoder_count = 0
+    print("Home position reached. Encoder count reset.")
+
+# 핫스팟 위치 찾기
+def get_hotspot_position(temps):
+    max_temp = -9999
+    pos = (0, 0)
+    for i in range(len(temps)):
+        for j in range(len(temps[0])):
+            if temps[i][j] > max_temp:
+                max_temp = temps[i][j]
+                pos = (i, j)
+    return pos
+
+
+
+threading.Thread(target=reset_encoder, daemon=True).start()
+
+# 프로그램 시작 시 모터 홈 복귀
+init_motor()
+
+try:
+    thermal = ThermalCapture()
+    center = (12, 16)  # 열화상 센서 배열 중앙 인덱스
+    tolerance = 5      # 허용 오차
+
+    while True:
+        temps = thermal.get_data()
+        hotspot = get_hotspot_position(temps)
+        error = hotspot[1] - center[1]
+
+        if abs(error) > tolerance:
+            # 왼쪽 회전 허용 범위 내일 때만 동작
+            if error > 0 and encoder_count+1 < MAX_COUNT:
+                print("Move motor LEFT")
+                move_motor('left')
+            # 오른쪽 회전 허용 범위 내일 때만 동작
+            elif error < 0 and encoder_count+1 > MIN_COUNT:
+                print("Move motor RIGHT")
+                move_motor('right')
+            else:
+                print("Limit reached, stop motor")
+                stop_motor()
+        else:
+            print("Stop motor")
+            stop_motor()
+
+        print(f"Hotspot: {hotspot}, Encoder Count: {encoder_count}, Error: {error}")
+        time.sleep(0.15)
+
+finally:
+    pwm.stop()
+    GPIO.cleanup()

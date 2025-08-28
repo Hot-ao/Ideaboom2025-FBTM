@@ -4,8 +4,10 @@
   <title>RC Tank Control</title>
 </head>
 <body>
-  <h2>RC탱크 컨트롤 (WASD로 방향 조작!)</h2>
-  <div id="direction-display" style="font-size:2em; margin:25px;">현재 입력 없음</div>
+  <div style="text-align:center; margin-top:20px;">
+    <h2>RC탱크 컨트롤 (WASD로 방향 조작!)</h2>
+    <div id="direction-display" style="font-size:2em; margin:25px;">현재 입력 없음</div>
+  </div>
   <script>
     document.addEventListener('keydown', function(event) {
       let dir = '';
@@ -17,7 +19,7 @@
       }
       if (dir) {
         document.getElementById('direction-display').textContent = dir.toUpperCase();
-        fetch('http://192.168.0.10:5000/motor/input', {
+        fetch('http://192.168.0.6:5000/motor/input', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: dir })
@@ -32,7 +34,7 @@
       // 키 뗄 때 정지 명령
       if (['w','a','s','d'].includes(event.key.toLowerCase())) {
         document.getElementById('direction-display').textContent = '정지';
-        fetch('http://192.168.0.10:5000/motor/input', {
+        fetch('http://192.168.0.6:5000/motor/input', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'stop' })

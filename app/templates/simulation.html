@@ -1,28 +1,255 @@
 <!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="utf-8">
-    <title>산불 풍향/풍속 시뮬레이션</title>
-    <script>
-        function updateData() {
-            fetch('/simulation/data')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('direction').textContent = data.direction + '°';
-                    document.getElementById('speed').textContent = data.speed + ' km/h';
-                    document.getElementById('temperature').textContent = data.temperature + '℃';
-                    document.getElementById('humidity').textContent = data.humidity + '%';
-                });
-        }
-        setInterval(updateData, 20000); // 2초 마다 갱신
-        window.onload = updateData;
-    </script>
+<meta charset="utf-8" />
+<title>풍향 풍속 시뮬레이션</title>
+<style>
+  body { font-family: 'Roboto', Arial, sans-serif; background: #f7fafc; color: #222; padding: 20px; }
+  .container { max-width: 1500px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 20px; }
+  h2 { text-align: center; margin-bottom: 10px; color: #205295; }
+  .row { display: flex; align-items: center; margin-bottom: 16px; cursor: pointer; }
+  .label { flex: 1; font-weight: 700; user-select: none; }
+  .value { width: 80px; text-align: right; font-weight: 500; }
+  #directionArrow {
+    width: 40px; height: 40px; margin-left: 16px;
+    transition: transform 0.6s ease;
+  }
+  .barContainer {
+    flex: 2;
+    min-width: 200px;
+    height: 16px;
+    background: #ddd;
+    border-radius: 8px;
+    margin-left: 12px;
+    position: relative;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .barFill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.6s ease;
+    box-sizing: border-box;
+  }
+  #speedBar { background: #3a85ff; }
+  #temperatureBar { background: #f39c12; }
+  #humidityBar { background: #27ae60; }
+  #manualModal {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    justify-content: center; align-items: center;
+  }
+  #modalContent {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 200px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  label { display: block; margin: 8px 0 4px; font-weight: 600; }
+  input[type=number] { width: 100%; padding: 6px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; }
+  button { margin-top: 12px; width: 100%; padding: 10px; border: none; font-weight: 600; border-radius: 8px; cursor: pointer; }
+  #saveBtn { background: #3a85ff; color: white; }
+  #cancelBtn, #unsetBtn { background: #ccc; }
+  #unsetBtn { margin-top: 8px; }
+</style>
 </head>
 <body>
-    <h2>산불 풍향/풍속 시뮬레이션</h2>
-    <div>풍향: <span id="direction"></span></div>
-    <div>풍속: <span id="speed"></span></div>
-    <div>대기 온도: <span id="temperature"></span></div>
-    <div>상대 습도: <span id="humidity"></span></div>
+<div class="container">
+  <div id="directionRow" class="row" title="클릭하여 임의 조절">
+    <div class="label">풍향</div>
+    <div class="value" id="directionValue">0°</div>
+    <svg id="directionArrow" viewBox="0 0 24 24" fill="none" stroke="#3a85ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="19" x2="12" y2="5"></line>
+      <polyline points="5 12 12 5 19 12"></polyline>
+    </svg>
+  </div>
+  <div id="speedRow" class="row" title="클릭하여 임의 조절">
+    <div class="label">풍속</div>
+    <div class="barContainer"><div class="barFill" id="speedBar"></div></div>
+    <div class="value" id="speedValue">0 km/h</div>
+  </div>
+  <div id="temperatureRow" class="row" title="클릭하여 임의 조절">
+    <div class="label">대기 온도</div>
+    <div class="barContainer"><div class="barFill" id="temperatureBar"></div></div>
+    <div class="value" id="temperatureValue">20℃</div>
+  </div>
+  <div id="humidityRow" class="row" title="클릭하여 임의 조절">
+    <div class="label">상대 습도</div>
+    <div class="barContainer"><div class="barFill" id="humidityBar"></div></div>
+    <div class="value" id="humidityValue">10%</div>
+  </div>
+</div>
+<div id="manualModal">
+  <div id="modalContent">
+    <h3>임의 조절 설정</h3>
+    <form id="manualForm">
+      <label id="inputLabel" for="manualInput"></label>
+      <input id="manualInput" type="number" required />
+      <button id="saveBtn" type="submit">저장</button>
+      <button id="unsetBtn" type="button">임의 설정 해제</button>
+      <button id="cancelBtn" type="button">취소</button>
+    </form>
+  </div>
+</div>
+<script>
+  let manualMode = { direction: false, speed: false, temperature: false, humidity: false };
+  let manualValues = { direction: 90, speed: 20, temperature: 30, humidity: 40 };
+  let currentData = { direction: 90, speed: 20, temperature: 30, humidity: 40 };
+  let currentEdit = null;
+
+  function sendToServer() {
+    const payload = {
+      direction: currentData.direction,
+      speed: currentData.speed,
+      temperature: currentData.temperature,
+      humidity: currentData.humidity
+    };
+    fetch('/simulation/send_settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    }).catch(console.error);
+  }
+
+  function generateSimulatedValue(prev, min, max, delta) {
+    const change = (Math.random()*2 -1)*delta;
+    let next = prev + change;
+    if(next < min) next = min;
+    if(next > max) next = max;
+    return next;
+  }
+
+  function updateData() {
+    ['direction','speed','temperature','humidity'].forEach(type => {
+      if(!manualMode[type]){
+        let min,max,delta;
+        switch(type){
+          case 'direction': min=0; max=360; delta=5; break;
+          case 'speed': min=0; max=80; delta=2; break;
+          case 'temperature': min=0; max=60; delta=1; break;
+          case 'humidity': min=0; max=100; delta=3; break;
+        }
+        currentData[type] = generateSimulatedValue(currentData[type], min, max, delta);
+      } else {
+        currentData[type] = manualValues[type];
+      }
+    });
+    renderUI(currentData);
+    sendToServer();
+  }
+
+  function renderUI(data){
+    document.getElementById('directionValue').textContent = data.direction.toFixed(0) + '°';
+    document.getElementById('directionArrow').style.transform = `rotate(${data.direction}deg)`;
+    document.getElementById('speedValue').textContent = data.speed.toFixed(1) + ' km/h';
+    document.getElementById('speedBar').style.width = `${(data.speed/80)*100}%`;
+    document.getElementById('temperatureValue').textContent = data.temperature.toFixed(1) + '℃';
+    document.getElementById('temperatureBar').style.width = `${(data.temperature/60)*100}%`;
+    document.getElementById('humidityValue').textContent = data.humidity.toFixed(1) + '%';
+    document.getElementById('humidityBar').style.width = `${(data.humidity/100)*100}%`;
+  }
+
+  const manualModal = document.getElementById('manualModal');
+  const manualForm = document.getElementById('manualForm');
+  const manualInput = document.getElementById('manualInput');
+  const inputLabel = document.getElementById('inputLabel');
+  const unsetBtn = document.getElementById('unsetBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+
+  function openModal(type){
+    currentEdit = type;
+    manualModal.style.display = 'flex';
+    switch(type){
+      case 'direction':
+        inputLabel.textContent = '풍향 (0~360도)';
+        manualInput.min=0; manualInput.max=360; manualInput.step=1;
+        manualInput.value = currentData.direction.toFixed(0);
+        break;
+      case 'speed':
+        inputLabel.textContent = '풍속 (0~80 km/h)';
+        manualInput.min=0; manualInput.max=80; manualInput.step=0.1;
+        manualInput.value = currentData.speed.toFixed(1);
+        break;
+      case 'temperature':
+        inputLabel.textContent = '대기 온도 (0~60℃)';
+        manualInput.min=0; manualInput.max=60; manualInput.step=0.1;
+        manualInput.value = currentData.temperature.toFixed(1);
+        break;
+      case 'humidity':
+        inputLabel.textContent = '상대 습도 (0~100%)';
+        manualInput.min=0; manualInput.max=100; manualInput.step=0.1;
+        manualInput.value = currentData.humidity.toFixed(1);
+        break;
+    }
+  }
+
+  function closeModal(){
+    manualModal.style.display = 'none';
+    currentEdit = null;
+  }
+
+  // 저장 버튼 클릭 시 값 반영 + 서버 전송 + 모달 닫기
+  manualForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const val = parseFloat(manualInput.value);
+    if (!isNaN(val) && currentEdit) {
+      manualValues[currentEdit] = val;
+      manualMode[currentEdit] = true;
+      currentData[currentEdit] = val;
+      renderUI(currentData);
+      sendToServer();
+    }
+    closeModal();
+  });
+
+  unsetBtn.addEventListener('click', () => {
+    if (!currentEdit) return;
+    manualMode[currentEdit] = false;
+    sendToServer();
+    closeModal();
+  });
+
+  cancelBtn.addEventListener('click', closeModal);
+
+  document.getElementById('directionRow').addEventListener('click', () => openModal('direction'));
+  document.getElementById('speedRow').addEventListener('click', () => openModal('speed'));
+  document.getElementById('temperatureRow').addEventListener('click', () => openModal('temperature'));
+  document.getElementById('humidityRow').addEventListener('click', () => openModal('humidity'));
+
+  setInterval(updateData, 2000);
+  window.onload = updateData;
+
+</script>
+<button id="pumpToggleBtn">펌프 켜기</button>
+
+<script>
+  let pumpOn = false;
+
+  document.getElementById('pumpToggleBtn').addEventListener('click', () => {
+    pumpOn = !pumpOn;
+    fetch('http://192.168.0.6:5000/motor/pump_toggle', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({state: pumpOn})
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        document.getElementById('pumpToggleBtn').textContent = pumpOn ? '펌프 끄기' : '펌프 켜기';
+      } else {
+        alert('펌프 제어 실패: ' + data.message);
+        // 실패시 버튼 상태 원복
+        pumpOn = !pumpOn;
+      }
+    })
+    .catch(err => {
+      alert('서버 통신 오류: ' + err);
+      pumpOn = !pumpOn;
+    });
+  });
+</script>
+
 </body>
 </html>
