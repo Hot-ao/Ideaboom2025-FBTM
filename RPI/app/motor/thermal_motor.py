@@ -1,81 +1,112 @@
-import numpy as np
-from app.thermal.capture import ThermalCapture
 
-class ThermalMotorController:
-    def __init__(self, angle_per_col=5.625):
-        self.center_col = 16  # Center column index of thermal data (0 to 31)
-        self.min_angle = -90  # Min rotation limit (degrees)
-        self.max_angle = 90   # Max rotation limit (degrees)
-        self.angle_per_col = angle_per_col  # Rotation angle per column (180 degrees / 32 columns)
-        self.current_angle = 0  # Current rotational angle of the motor
-        self.current_side_pos = 0  # Current position of side motor (arbitrary units)
-        self.capture = ThermalCapture()
+import RPi.GPIO as GPIO
+import time
+import sys
+import threading
+sys.path.append('/home/fbtm/Desktop/fbtm_code/Ideaboom2025-FBTM/RPI/app/thermal')
+from capture import ThermalCapture
 
-    def get_thermal_and_decide(self):
-        arr = np.array(self.capture.get_data())
-        max_row, max_col = np.unravel_index(np.argmax(arr), arr.shape)
+# GPIO �� ����
+IN1, IN2, ENA = 16, 20, 12
+ENC_A, ENC_B = 8, 7
 
-        # Calculate rotation target angle
-        target_angle = (max_col - self.center_col) * self.angle_per_col
-        target_angle = min(max(target_angle, self.min_angle), self.max_angle)
-        move_angle = target_angle - self.current_angle
+GPIO.setmode(GPIO.BCM)
+GPIO.setup([IN1, IN2, ENA], GPIO.OUT)
+GPIO.setup([ENC_A, ENC_B], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-        if abs(move_angle) < 1:
-            direction = "none"
-            move_angle = 0
-        elif move_angle > 0:
-            direction = "right"
-        else:
-            direction = "left"
+# PWM ����
+pwm = GPIO.PWM(ENA, 1000)
+pwm.start(0)
 
-        if direction != "none":
-            self.move_motor(direction, abs(move_angle))
-            self.current_angle = target_angle
+# ���� ����
+encoder_count = 0
+MAX_COUNT = 1850  # ������ ȸ�� �ִ� �޽� �� ����
+MIN_COUNT = -1850 # ���� ȸ�� �ּ� �޽� �� ���� (����)
+MOTOR_SPEED = 70
 
-        # Additional logic for side movement motor (example: based on max_col)
-        # Define side movement range e.g. from -10 to +10 units
-        side_move_limit = 10  
-        target_side_pos = (max_col - self.center_col) / self.center_col * side_move_limit
-        side_move_dist = target_side_pos - self.current_side_pos
+# ���ڴ� ���ͷ�Ʈ �ݹ�
+def encoder_callback(channel):
+    global encoder_count
+    if GPIO.input(ENC_A) == GPIO.input(ENC_B):
+        encoder_count += 1
+    else:
+        encoder_count -= 1
 
-        if abs(side_move_dist) > 0.5:  # Threshold to reduce jitter
-            if side_move_dist > 0:
-                side_direction = "right"
-            else:
-                side_direction = "left"
-            self.move_side_motor(side_direction, abs(side_move_dist))
-            self.current_side_pos = target_side_pos
-        else:
-            side_direction = "none"
-            side_move_dist = 0
+GPIO.add_event_detect(ENC_A, GPIO.BOTH, callback=encoder_callback)
 
-        return {
-            "rotation": {
-                "direction": direction,
-                "move_angle": abs(move_angle),
-                "current_angle": self.current_angle,
-            },
-            "side_move": {
-                "direction": side_direction,
-                "distance": abs(side_move_dist),
-                "current_pos": self.current_side_pos,
-            },
-            "max_col": max_col,
-            "max_temp": arr[max_row, max_col]
-        }
+# ���� ���� �Լ�
+def move_motor(direction, speed=MOTOR_SPEED):
+    if direction == 'left':
+        GPIO.output(IN1, GPIO.HIGH)
+        GPIO.output(IN2, GPIO.LOW)
+        pwm.ChangeDutyCycle(speed)
+    elif direction == 'right':
+        GPIO.output(IN1, GPIO.LOW)
+        GPIO.output(IN2, GPIO.HIGH)
+        pwm.ChangeDutyCycle(speed)
+    else:
+        stop_motor()
 
-    def move_motor(self, direction, angle):
-        # TODO: Implement rotation motor control (via GPIO or motor driver pins)
-        print(f"Rotate motor {direction} by {angle:.2f} degrees")
+# ���� ���� �Լ�
+def stop_motor():
+    GPIO.output(IN1, GPIO.LOW)
+    GPIO.output(IN2, GPIO.LOW)
+    pwm.ChangeDutyCycle(0)
 
-    def move_side_motor(self, direction, distance):
-        # TODO: Implement side movement motor control (e.g. linear actuation)
-        print(f"Move side motor {direction} by {distance:.2f} units")
+# �ʱ� ��ġ ���� �Լ� (Ȩ���� ���ư���)
+def init_motor():
+    global encoder_count
+    print("Returning motor to home position...")
+    # Ȩ ��ġ�� MIN_COUNT ��ġ�� ����, ���������� ��� ���� ����
+    move_motor('right')
+    while encoder_count > MIN_COUNT:
+        time.sleep(0.01)
+    stop_motor()
+    encoder_count = 0
+    print("Home position reached. Encoder count reset.")
 
-if __name__ == "__main__":
-    controller = ThermalMotorController()
-    import time
+# �ֽ��� ��ġ ã��
+def get_hotspot_position(temps):
+    max_temp = -9999
+    pos = (0, 0)
+    for i in range(len(temps)):
+        for j in range(len(temps[0])):
+            if temps[i][j] > max_temp:
+                max_temp = temps[i][j]
+                pos = (i, j)
+    return pos
+
+
+
+try:
+    thermal = ThermalCapture()
+    center = (12, 16)  # ��ȭ�� ���� �迭 �߾� �ε���
+    tolerance = 5      # ��� ����
+
     while True:
-        result = controller.get_thermal_and_decide()
-        print(result)
-        time.sleep(1)
+        temps = thermal.get_data()
+        hotspot = get_hotspot_position(temps)
+        error = hotspot[1] - center[1]
+
+        if abs(error) > tolerance:
+            # ���� ȸ�� ��� ���� ���� ���� ����
+            if error > 0:
+                print("Move motor LEFT")
+                move_motor('left')
+            # ������ ȸ�� ��� ���� ���� ���� ����
+            elif error < 0:
+                print("Move motor RIGHT")
+                move_motor('right')
+            else:
+                print("Limit reached, stop motor")
+                stop_motor()
+        else:
+            print("Stop motor")
+            stop_motor()
+
+        print(f"Hotspot: {hotspot}, Encoder Count: {encoder_count}, Error: {error}")
+        time.sleep(0.15)
+
+finally:
+    pwm.stop()
+    GPIO.cleanup()

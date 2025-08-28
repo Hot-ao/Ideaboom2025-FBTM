@@ -6,7 +6,7 @@ import time
 import requests
 
 SERVER_URL = 'http://192.168.0.162:5000/thermal/upload_endpoint' #MECA
-#SERVER_URL = 'http://192.168.200.171:5000/thermal/upload_endpoint' #HOME
+#SERVER_URL = 'http://192.168.200.176:5000/thermal/upload_endpoint' #HOME
 #SERVER_URL = 'http://fbtm761.duckdns.org:5000/thermal/upload_endpoint' #DUCKDNS
 
 # I2C setup
