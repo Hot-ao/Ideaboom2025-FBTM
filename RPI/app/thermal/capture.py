@@ -12,9 +12,12 @@ class ThermalCapture:
         self.frame = np.zeros((24*32))
     
     def get_data(self):
-        self.mlx.getFrame(self.frame)
-        data_array = np.reshape(self.frame, (24, 32))            
-        # Change error_data
-        error_array = data_array[22:24, 12:14]
-        data_array[23, 13] = np.median(error_array)
-        return data_array.tolist()
+        while True:
+            try:
+                self.mlx.getFrame(self.frame)
+                data_array = np.reshape(self.frame, (24, 32))
+                error_array = data_array[22:24, 12:14]
+                data_array[23, 13] = np.median(error_array)
+                return data_array.tolist()
+            except RuntimeError:
+                time.sleep(0.05)

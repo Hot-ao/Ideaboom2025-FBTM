@@ -1,71 +1,75 @@
-
 import RPi.GPIO as GPIO
 import time
 import sys
-import threading
 sys.path.append('/home/fbtm/Desktop/fbtm_code/Ideaboom2025-FBTM/RPI/app/thermal')
 from capture import ThermalCapture
 
-# GPIO �� ����
-IN1, IN2, ENA = 16, 20, 12
-ENC_A, ENC_B = 8, 7
+# Motor control pins
+IN1, IN2, ENA = 23, 24, 18
+ENC_A, ENC_B = 21, 25
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup([IN1, IN2, ENA], GPIO.OUT)
-GPIO.setup([ENC_A, ENC_B], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# PWM ����
+# Setup output pins individually
+for pin in [IN1, IN2, ENA]:
+    GPIO.setup(pin, GPIO.OUT)
+
+# Setup input pins individually with pull-up resistor
+for pin in [ENC_A, ENC_B]:
+    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# PWM setup
 pwm = GPIO.PWM(ENA, 1000)
 pwm.start(0)
 
-# ���� ����
-encoder_count = 0
-MAX_COUNT = 1850  # ������ ȸ�� �ִ� �޽� �� ����
-MIN_COUNT = -1850 # ���� ȸ�� �ּ� �޽� �� ���� (����)
-MOTOR_SPEED = 70
+# Control parameters
+MOTOR_SPEED = 80
+STEP_DEGREE = 5
+MAX_STEPS = 18    # +90 degrees max
+MIN_STEPS = -18   # -90 degrees min
+TIME_PER_REVOLUTION = 5.5  # seconds for full revolution
+TIME_PER_STEP = TIME_PER_REVOLUTION * (STEP_DEGREE / 360)
+CENTER = (12, 16)
+TOLERANCE = 5
 
-# ���ڴ� ���ͷ�Ʈ �ݹ�
-def encoder_callback(channel):
-    global encoder_count
-    if GPIO.input(ENC_A) == GPIO.input(ENC_B):
-        encoder_count += 1
-    else:
-        encoder_count -= 1
+current_step = 0
 
-GPIO.add_event_detect(ENC_A, GPIO.BOTH, callback=encoder_callback)
+def move_motor_step(direction):
+    global current_step
 
-# ���� ���� �Լ�
-def move_motor(direction, speed=MOTOR_SPEED):
     if direction == 'left':
+        if current_step >= MAX_STEPS:
+            print("Reached max left limit.")
+            stop_motor()
+            return
         GPIO.output(IN1, GPIO.HIGH)
         GPIO.output(IN2, GPIO.LOW)
-        pwm.ChangeDutyCycle(speed)
+        current_step += 1
+
     elif direction == 'right':
+        if current_step <= MIN_STEPS:
+            print("Reached max right limit.")
+            stop_motor()
+            return
         GPIO.output(IN1, GPIO.LOW)
         GPIO.output(IN2, GPIO.HIGH)
-        pwm.ChangeDutyCycle(speed)
+        current_step -= 1
+
     else:
         stop_motor()
+        return
 
-# ���� ���� �Լ�
+    pwm.ChangeDutyCycle(MOTOR_SPEED)
+    time.sleep(TIME_PER_STEP)
+    pwm.ChangeDutyCycle(0)
+    time.sleep(0.1)
+    print(f"Moved {direction}. Current step: {current_step}, Angle: {current_step * STEP_DEGREE} degrees")
+
 def stop_motor():
     GPIO.output(IN1, GPIO.LOW)
     GPIO.output(IN2, GPIO.LOW)
     pwm.ChangeDutyCycle(0)
 
-# �ʱ� ��ġ ���� �Լ� (Ȩ���� ���ư���)
-def init_motor():
-    global encoder_count
-    print("Returning motor to home position...")
-    # Ȩ ��ġ�� MIN_COUNT ��ġ�� ����, ���������� ��� ���� ����
-    move_motor('right')
-    while encoder_count > MIN_COUNT:
-        time.sleep(0.01)
-    stop_motor()
-    encoder_count = 0
-    print("Home position reached. Encoder count reset.")
-
-# �ֽ��� ��ġ ã��
 def get_hotspot_position(temps):
     max_temp = -9999
     pos = (0, 0)
@@ -76,37 +80,28 @@ def get_hotspot_position(temps):
                 pos = (i, j)
     return pos
 
-
-
 try:
     thermal = ThermalCapture()
-    center = (12, 16)  # ��ȭ�� ���� �迭 �߾� �ε���
-    tolerance = 5      # ��� ����
-
     while True:
         temps = thermal.get_data()
         hotspot = get_hotspot_position(temps)
-        error = hotspot[1] - center[1]
+        error = hotspot[1] - CENTER[1]
 
-        if abs(error) > tolerance:
-            # ���� ȸ�� ��� ���� ���� ���� ����
+        if abs(error) > TOLERANCE:
             if error > 0:
-                print("Move motor LEFT")
-                move_motor('left')
-            # ������ ȸ�� ��� ���� ���� ���� ����
-            elif error < 0:
-                print("Move motor RIGHT")
-                move_motor('right')
+                move_motor_step('left')
             else:
-                print("Limit reached, stop motor")
-                stop_motor()
+                move_motor_step('right')
         else:
-            print("Stop motor")
+            print("Hotspot centered. Motor stopped.")
             stop_motor()
 
-        print(f"Hotspot: {hotspot}, Encoder Count: {encoder_count}, Error: {error}")
-        time.sleep(0.15)
+        print(f"Hotspot: {hotspot}, Error: {error}")
+        time.sleep(0.05)
 
+except KeyboardInterrupt:
+    print("Program stopped by user")
 finally:
+    stop_motor()
     pwm.stop()
     GPIO.cleanup()
