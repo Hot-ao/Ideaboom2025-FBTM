@@ -1,22 +1,17 @@
 import RPi.GPIO as GPIO
 import time
 import sys
-sys.path.append('/home/fbtm/Desktop/fbtm_code/Ideaboom2025-FBTM/RPI/app/thermal')
-from capture import ThermalCapture
+# sys.path.append('/home/fbtm/Desktop/fbtm_code/Ideaboom2025-FBTM/RPI/app/thermal')
+# from capture import ThermalCapture
 
 # Motor control pins
 IN1, IN2, ENA = 23, 24, 18
-ENC_A, ENC_B = 21, 25
 
 GPIO.setmode(GPIO.BCM)
 
-# Setup output pins individually
+# Setup output pins
 for pin in [IN1, IN2, ENA]:
     GPIO.setup(pin, GPIO.OUT)
-
-# Setup input pins individually with pull-up resistor
-for pin in [ENC_A, ENC_B]:
-    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # PWM setup
 pwm = GPIO.PWM(ENA, 1000)
@@ -25,8 +20,8 @@ pwm.start(0)
 # Control parameters
 MOTOR_SPEED = 80
 STEP_DEGREE = 5
-MAX_STEPS = 18    # +90 degrees max
-MIN_STEPS = -18   # -90 degrees min
+MAX_STEPS = 18    # +90 degrees
+MIN_STEPS = -18   # -90 degrees
 TIME_PER_REVOLUTION = 5.5  # seconds for full revolution
 TIME_PER_STEP = TIME_PER_REVOLUTION * (STEP_DEGREE / 360)
 CENTER = (12, 16)
@@ -62,7 +57,7 @@ def move_motor_step(direction):
     pwm.ChangeDutyCycle(MOTOR_SPEED)
     time.sleep(TIME_PER_STEP)
     pwm.ChangeDutyCycle(0)
-    time.sleep(0.01)
+    time.sleep(0.1)
     print(f"Moved {direction}. Current step: {current_step}, Angle: {current_step * STEP_DEGREE} degrees")
 
 def stop_motor():
@@ -81,9 +76,10 @@ def get_hotspot_position(temps):
     return pos
 
 try:
-    thermal = ThermalCapture()
+    # thermal = ThermalCapture()  # ���� ȯ�濡 �°� ����
     while True:
-        temps = thermal.get_data()
+        # temps = thermal.get_data()  # ���� ��ȭ�� ������ ��� �� Ȱ��ȭ
+        temps = [[20, 21, 22], [25, 35, 20], [21, 23, 24]]  # �׽�Ʈ�� ���� ������
         hotspot = get_hotspot_position(temps)
         error = hotspot[1] - CENTER[1]
 
@@ -97,7 +93,7 @@ try:
             stop_motor()
 
         print(f"Hotspot: {hotspot}, Error: {error}")
-        time.sleep(0.01)
+        time.sleep(0.05)
 
 except KeyboardInterrupt:
     print("Program stopped by user")
