@@ -62,7 +62,7 @@ def move_motor_step(direction):
     pwm.ChangeDutyCycle(MOTOR_SPEED)
     time.sleep(TIME_PER_STEP)
     pwm.ChangeDutyCycle(0)
-    time.sleep(0.1)
+    time.sleep(0.01)
     print(f"Moved {direction}. Current step: {current_step}, Angle: {current_step * STEP_DEGREE} degrees")
 
 def stop_motor():
@@ -97,7 +97,7 @@ try:
             stop_motor()
 
         print(f"Hotspot: {hotspot}, Error: {error}")
-        time.sleep(0.05)
+        time.sleep(0.01)
 
 except KeyboardInterrupt:
     print("Program stopped by user")
