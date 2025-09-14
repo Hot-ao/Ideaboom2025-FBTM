@@ -34,7 +34,7 @@ def update_motor_gpio():
 
 def set_motion(action):
     with state_lock:
-        speed = 70
+        speed = 100
         if action == 'forward':
             motor_state['left_dir'] = 'forward'
             motor_state['right_dir'] = 'forward'

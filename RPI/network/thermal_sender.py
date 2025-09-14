@@ -15,4 +15,4 @@ def send_thermal_data():
             time.sleep(0.05)
         except Exception as e:
             print("Thermal send error:", e)
-        time.sleep(1)
+        time.sleep(0.05)
