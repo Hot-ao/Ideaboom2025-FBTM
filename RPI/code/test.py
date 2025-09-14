@@ -9,7 +9,7 @@ from capture import ThermalCapture
 IN1, IN2 = 24, 25      # Set these to your wiring for A motor
 
 # Motor B control pins
-IN3, IN4 = 22, 27        # Set these to your wiring for B motor
+IN3, IN4 = 27, 22        # Set these to your wiring for B motor
 
 # PWM pins for software PWM
 A_PWM_PIN = 23         # A motor (software PWM)

@@ -2,11 +2,11 @@ import RPi.GPIO as GPIO
 import threading
 import time
 
-LEFT_IN1 = 19
-LEFT_IN2 = 26
+LEFT_IN1 = 26
+LEFT_IN2 = 19
 LEFT_EN = 13
-RIGHT_IN1 = 16
-RIGHT_IN2 = 20
+RIGHT_IN1 = 20
+RIGHT_IN2 = 16
 RIGHT_EN = 12
 
 GPIO.setmode(GPIO.BCM)

@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 
-PUMP_PIN = 25 
+PUMP_PIN = 5 
 
 def init_pump():
     GPIO.setmode(GPIO.BCM)
