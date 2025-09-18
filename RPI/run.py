@@ -7,7 +7,8 @@ from network.sender import run_all_senders
 from network.socket_server import start_socket_server
 from app.motor.module_control import update_motor_gpio, cleanup
 from app.motor.pump_control import init_pump
-# from app.motor.routes import start_thermal_motor_control  # �ʿ� �� ���
+from app.simul.routes import simulation_bp, get_environment
+from app.motor.wind_control import control_loop
 
 app = create_app()
 
@@ -33,6 +34,14 @@ def graceful_shutdown(*_):
     except Exception:
         pass
 
+def start_control():
+    control_loop(get_environment)
+
+def start_control_thread():
+    t = Thread(target=start_control, daemon=True)
+    t.start()
+    return t
+
 atexit.register(graceful_shutdown)
 signal.signal(signal.SIGINT, graceful_shutdown)
 signal.signal(signal.SIGTERM, graceful_shutdown)
@@ -41,6 +50,7 @@ if __name__ == "__main__":
     t_network = start_network_thread()
     t_socket = start_socket_thread()
     t_motor = start_motor_thread()
+    t_control = start_control_thread()
 
     try:
         app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False, threaded=True)

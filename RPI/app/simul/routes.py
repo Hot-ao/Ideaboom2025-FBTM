@@ -16,10 +16,25 @@ def get_environment():
 
 @simulation_bp.route("/set_environment", methods=["POST"])
 def set_environment():
-    data = request.get_json(silent=True) or {} 
-    for k in ("direction", "speed", "temperature", "humidity"):
-        if k in data:
-            _env[k] = float(data[k])
+    data = request.get_json(silent=False) 
+    i=1
+    try:
+        direction = float(data["direction"]); speed = float(data["speed"])
+        temperature = float(data["temperature"]); humidity = float(data["humidity"])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"status": "error", "message": "invalid or missing fields"}), 400
+        #return 0
+    direction = direction % 360.0
+    humidity = max(0.0, min(100.0, humidity))
+
+    _env.update({
+        "direction": direction,
+        "speed": speed,
+        "temperature": temperature,
+        "humidity": humidity,
+    })
     import time
     _env["updated_ts"] = time.time()
-    return jsonify({"status": "ok", "env": _env}) 
+    return jsonify({"status": "ok", "env": _env}), 200
+    #return 0
+
