@@ -3,7 +3,7 @@ import requests
 from app.thermal.capture import ThermalCapture
 
 #SERVER_URL = 'http://192.168.0.162:5000/thermal/upload_endpoint' #MECA
-SERVER_URL = 'http://192.168.194.251:5000/thermal/upload_endpoint' #HOME
+SERVER_URL = 'http://192.168.182.251:5000/thermal/upload_endpoint' #HOME
 
 def send_thermal_data():
     thermal = ThermalCapture()

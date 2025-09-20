@@ -1,3 +1,4 @@
+#/app/motor/routes.py
 from flask import Blueprint, request, jsonify
 from app.motor.module_control import set_motion  # motor_forward/backward 대신 set_motion 임포트
 from app.motor.pump_control import set_pump_state
