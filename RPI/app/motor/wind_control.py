@@ -135,7 +135,7 @@ def control_loop(get_env_func):
             error = hotspot[1] - CENTER[1]
 
             env = get_env_func()
-            print(f"[DEBUG] control_loop - get_env_func return env value: {env}")         
+            #print(f"[DEBUG] control_loop - get_env_func return env value: {env}")         
 
             wind_dir = float(env.get("direction", 0.0))
             wind_spd = float(env.get("speed", 0.0))

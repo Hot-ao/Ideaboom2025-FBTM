@@ -13,7 +13,7 @@ _env = {
 }
 
 def get_environment():
-    print(f"[Debug] now _env value: {_env}")
+    #print(f"[Debug] now _env value: {_env}")
     return dict(_env)
 
 @simulation_bp.route("/set_environment", methods=["POST"])
@@ -21,6 +21,7 @@ def set_environment():
     global _env
     try:
         data = request.get_json()
+        print("aaa",request.json)
         if not data:
             return jsonify({"status": "error", "message": "No data received"}), 400
         _env.update({
@@ -30,7 +31,7 @@ def set_environment():
             "humidity": data.get("humidity", 30.0),
             "updated_ts": time.time()
         })
-        print(f"[Debug] now _env value: {_env}")
+        #print(f"[Debug] now _env value: {_env}")
         return jsonify({"status": "ok"})
     except Exception as e:
         print(f"Exception in set_environment: {e}")
