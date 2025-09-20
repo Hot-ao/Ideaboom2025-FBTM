@@ -1,3 +1,4 @@
+#/app/thermal/capture.py
 import board
 import busio
 import numpy as np
@@ -7,8 +8,16 @@ import time
 class ThermalCapture:
     def __init__(self):
         i2c = busio.I2C(board.SCL, board.SDA, frequency=400000)
-        self.mlx = adafruit_mlx90640.MLX90640(i2c)
-        self.mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_4_HZ
+
+        while True:
+            try:
+                self.mlx = adafruit_mlx90640.MLX90640(i2c)
+                self.mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_4_HZ
+                break
+            except RuntimeError as e:
+                print(f"? MLX90640 init failed: {e}, retrying in 2s")
+                time.sleep(2)
+
         self.frame = np.zeros((24*32))
     
     def get_data(self):
