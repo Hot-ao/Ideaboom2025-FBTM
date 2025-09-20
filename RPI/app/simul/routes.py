@@ -1,5 +1,6 @@
 # app/simul/routes.py
 from flask import Blueprint, request, jsonify
+import time
 
 simulation_bp = Blueprint("simulation", __name__, url_prefix="/simulation")
 
@@ -12,29 +13,25 @@ _env = {
 }
 
 def get_environment():
+    print(f"[Debug] now _env value: {_env}")
     return dict(_env)
 
 @simulation_bp.route("/set_environment", methods=["POST"])
 def set_environment():
-    data = request.get_json(silent=False) 
-    i=1
+    global _env
     try:
-        direction = float(data["direction"]); speed = float(data["speed"])
-        temperature = float(data["temperature"]); humidity = float(data["humidity"])
-    except (KeyError, TypeError, ValueError):
-        return jsonify({"status": "error", "message": "invalid or missing fields"}), 400
-        #return 0
-    direction = direction % 360.0
-    humidity = max(0.0, min(100.0, humidity))
-
-    _env.update({
-        "direction": direction,
-        "speed": speed,
-        "temperature": temperature,
-        "humidity": humidity,
-    })
-    import time
-    _env["updated_ts"] = time.time()
-    return jsonify({"status": "ok", "env": _env}), 200
-    #return 0
-
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "No data received"}), 400
+        _env.update({
+            "direction": data.get("direction", 0.0),
+            "speed": data.get("speed", 0.0),
+            "temperature": data.get("temperature", 25.0),
+            "humidity": data.get("humidity", 30.0),
+            "updated_ts": time.time()
+        })
+        print(f"[Debug] now _env value: {_env}")
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        print(f"Exception in set_environment: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500

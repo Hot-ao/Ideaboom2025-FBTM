@@ -1,10 +1,13 @@
 # app/motor/wind_control.py
 import time
 import RPi.GPIO as GPIO
+
+# ��ȭ�� ȹ��
 import sys
 sys.path.append('/home/fbtm/Desktop/fbtm_code/Ideaboom2025-FBTM/RPI/app/thermal')
 from capture import ThermalCapture
 
+# ��/�Ķ����
 IN1, IN2 = 24, 25   # thermal pan A
 IN3, IN4 = 22, 27   # nozzle pan B
 A_PWM_PIN = 23
@@ -14,10 +17,12 @@ GPIO.setmode(GPIO.BCM)
 for pin in [IN1, IN2, IN3, IN4, A_PWM_PIN, B_PWM_PIN]:
     GPIO.setup(pin, GPIO.OUT)
 
+# ����Ʈ���� PWM �ν��Ͻ� ���� �� ���� [RPi.GPIO PWM ����]
 pwm_a = GPIO.PWM(A_PWM_PIN, 1000)
 pwm_b = GPIO.PWM(B_PWM_PIN, 1000)
 pwm_a.start(0)
 pwm_b.start(0)
+# ����: ChangeDutyCycle/stop �� PWM ���� API [web ����] [11][8][20][16]
 
 MOTOR_SPEED = 80
 STEP_DEGREE = 5
@@ -127,10 +132,11 @@ def control_loop(get_env_func):
         while True:
             temps = thermal.get_data()
             hotspot = get_hotspot_position(temps)
-            # ��/�� ����: ��ȭ�� �߽ɰ��� ����
             error = hotspot[1] - CENTER[1]
 
             env = get_env_func()
+            print(f"[DEBUG] control_loop - get_env_func return env value: {env}")         
+
             wind_dir = float(env.get("direction", 0.0))
             wind_spd = float(env.get("speed", 0.0))
 
